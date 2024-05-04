@@ -3,12 +3,25 @@ vim.opt.guicursor = ""
 vim.opt.nu = true
 vim.opt.relativenumber = true
 
+-- tabs & indentation
 vim.opt.tabstop=4
 vim.opt.softtabstop=4
 vim.opt.shiftwidth=4
-vim.opt.expandtab=true
-
+vim.opt.expandtab=true  -- expand tab to space
 vim.opt.smartindent = true
+
+-- search settings
+vim.opt.ignorecase=true  -- ignore case when search by default
+vim.opt.smartcase=true   -- mixed case will trigger case sensitive search
+
+-- terminal colour
+vim.opt.termguicolors=true
+vim.opt.background="dark"
+vim.opt.signcolumn="yes"
+
+-- split windows
+vim.opt.splitright = true -- split window to right
+vim.opt.splitbelow = true -- split window to bottom
 
 vim.opt.swapfile = false
 vim.opt.backup=false
@@ -29,4 +42,7 @@ vim.opt.updatetime = 50
 vim.opt.colorcolumn = "80"
 
 vim.g.mapleader = " "
+
+-- Tree style visualiser
+vim.cmd("let g:netrw_liststyle = 3")
 
