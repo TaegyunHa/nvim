@@ -8,7 +8,8 @@ vim.opt.tabstop=4
 vim.opt.softtabstop=4
 vim.opt.shiftwidth=4
 vim.opt.expandtab=true  -- expand tab to space
-vim.opt.smartindent = true
+vim.opt.autoindent=true
+--vim.opt.smartindent = true -- account for comment
 
 -- search settings
 vim.opt.ignorecase=true  -- ignore case when search by default
@@ -23,6 +24,7 @@ vim.opt.signcolumn="yes"
 vim.opt.splitright = true -- split window to right
 vim.opt.splitbelow = true -- split window to bottom
 
+-- undo
 vim.opt.swapfile = false
 vim.opt.backup=false
 vim.opt.undodir = os.getenv("HOME") .. "/.vim/undodir"
@@ -39,6 +41,7 @@ vim.opt.isfname:append("@-@")
 
 vim.opt.updatetime = 50
 
+vim.opt.cursorline = true
 vim.opt.colorcolumn = "80"
 
 vim.g.mapleader = " "

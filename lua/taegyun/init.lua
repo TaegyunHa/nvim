@@ -1,2 +1,2 @@
 require("taegyun.remap")
-require("taegyun.set")
+require("taegyun.options")
