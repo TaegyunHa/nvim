@@ -27,7 +27,7 @@ vim.opt.splitbelow = true -- split window to bottom
 -- undo
 vim.opt.swapfile = false
 vim.opt.backup=false
-vim.opt.undodir = os.getenv("HOME") .. "/.vim/undodir"
+vim.opt.undodir = (os.getenv("HOME") or os.getenv("USERPROFILE")) .. "/.vim/undodir"
 vim.opt.undofile = true
 
 vim.opt.hlsearch = true
