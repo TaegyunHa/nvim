@@ -3,8 +3,8 @@ vim.g.mapleader = " "
 -- Go out to directory tree
 vim.keymap.set("n", "<leader>pv", ":q<CR>")
 
--- Exit insert mode with jj
-vim.keymap.set("i", "jj", "<Esc>")
+-- Exit insert mode with kj
+vim.keymap.set("i", "kj", "<Esc>")
 
 -- Set highlight on search, but clear on pressing <Esc> in normal mode
 vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')

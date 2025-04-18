@@ -80,7 +80,7 @@ return {
             -- default handler for installed servers
             function(server_name)
                 lspconfig[server_name].setup({
-                capabilities = capabilities,
+                    capabilities = capabilities,
                 })
             end,
             ["lua_ls"] = function()
@@ -95,6 +95,25 @@ return {
                             },
                             completion = {
                                 callSnippet = "Replace",
+                            },
+                        },
+                    },
+                })
+            end,
+            ["basedpyright"] = function()
+                lspconfig["basedpyright"].setup({
+                    capabilities = capabilities,
+                    settings = {
+                        basedpyright = {
+                            diagnostics = {
+                                globals = { "vim" },
+                            },
+                            analysis  = {
+                                typeCheckingMode = "standard",
+                                diagnosticMode = "openFilesOnly",
+                                inlayHints = {
+                                    callArgumentNames = true
+                                }
                             },
                         },
                     },
