@@ -76,50 +76,35 @@ return {
             vim.fn.sign_define(hl, { text = icon, texthl = hl, numhl = "" })
         end
 
-        mason_lspconfig.setup_handlers({
-            -- default handler for installed servers
-            function(server_name)
-                lspconfig[server_name].setup({
-                    capabilities = capabilities,
-                })
-            end,
-            ["lua_ls"] = function()
-                -- configure lua server (with special settings)
-                lspconfig["lua_ls"].setup({
-                    capabilities = capabilities,
-                    settings = {
-                        Lua = {
-                            -- make the language server recognize "vim" global
-                            diagnostics = {
-                                globals = { "vim" },
-                            },
-                            completion = {
-                                callSnippet = "Replace",
-                            },
-                        },
-                    },
-                })
-            end,
-            ["basedpyright"] = function()
-                lspconfig["basedpyright"].setup({
-                    capabilities = capabilities,
-                    settings = {
-                        basedpyright = {
-                            diagnostics = {
-                                globals = { "vim" },
-                            },
-                            analysis  = {
-                                typeCheckingMode = "standard",
-                                diagnosticMode = "openFilesOnly",
-                                inlayHints = {
-                                    callArgumentNames = true
-                                }
-                            },
-                        },
-                    },
-                })
-            end,
+        require("mason").setup()
+        require("mason-lspconfig").setup()
+
+        vim.lsp.config('lua_ls', {
+          capabilities = capabilities,
+          settings = {
+            Lua = {
+              diagnostics = { globals = { "vim" } },
+              completion = { callSnippet = "Replace" },
+            },
+          },
         })
+
+        vim.lsp.config('basedpyright', {
+          capabilities = capabilities,
+          settings = {
+            basedpyright = {
+              diagnostics = { globals = { "vim" } },
+              analysis  = {
+                typeCheckingMode = "standard",
+                diagnosticMode = "openFilesOnly",
+                inlayHints = { callArgumentNames = true }
+              },
+            },
+          },
+        })
+
+        -- For all other servers, you can use:
+        -- vim.lsp.config('server_name', { capabilities = capabilities })
     end,
 }
 

@@ -26,7 +26,9 @@ return {
             defaults = {
                 path_display = { "smart" },
                 file_ignore_patterns = {
-                    "__pycache__"
+                    "__pycache__",
+                    "dist",
+                    "node_modules"
                 },
                 mappings = {
                     i = {
