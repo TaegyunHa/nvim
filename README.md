@@ -1,5 +1,11 @@
 # nvim
 
+## Set config path
+
+Set environment variable:
+- Variable: `XDG_CONFIG_HOME`
+- Value: `%USERPROFILE%\.config`
+
 ## Packers
 
 - https://github.com/wbthomason/packer.nvim
