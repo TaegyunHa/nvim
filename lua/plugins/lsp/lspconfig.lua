@@ -2,109 +2,103 @@ return {
     "neovim/nvim-lspconfig",
     event = { "BufReadPre", "BufNewFile" },
     dependencies = {
+        { "mason-org/mason.nvim", opts = {} },
+        "WhoIsSethDaniel/mason-tool-installer.nvim",
         "hrsh7th/cmp-nvim-lsp",
         { "antosha417/nvim-lsp-file-operations", config = true },
-        { "folke/neodev.nvim", opts = {} },
+        { "folke/lazydev.nvim", ft = "lua", opts = {} },
     },
     config = function()
-        -- import lspconfig plugin
-        local lspconfig = require("lspconfig")
+        require("mason-tool-installer").setup({
+            ensure_installed = {
+                "lua_ls",
+                "clangd",
+                "cmake",
+                "stylua",
+                "isort",
+                "black",
+                "pylint",
+                "clang-format",
+                "cmake-language-server",
+            },
+        })
 
-        -- import mason_lspconfig plugin
-        local mason_lspconfig = require("mason-lspconfig")
-
-        -- import cmp-nvim-lsp plugin
         local cmp_nvim_lsp = require("cmp_nvim_lsp")
 
         vim.api.nvim_create_autocmd("LspAttach", {
             group = vim.api.nvim_create_augroup("UserLspConfig", {}),
             callback = function(ev)
-                -- Buffer local mappings.
-                -- See `:help vim.lsp.*` for documentation on any of the below functions
-                local opts = { buffer = ev.buf, silent = true }
+                local map = function(keys, func, desc, mode)
+                    mode = mode or "n"
+                    vim.keymap.set(mode, keys, func, { buffer = ev.buf, desc = "LSP: " .. desc })
+                end
 
-                -- set keybinds
-                opts.desc = "Show LSP references"
-                vim.keymap.set("n", "gr", "<cmd>Telescope lsp_references<CR>", opts) -- show definition, references
+                -- Telescope-powered LSP navigation (overrides 0.11 defaults with Telescope UI)
+                map("gD", vim.lsp.buf.declaration, "Go to declaration")
+                map("gd", "<cmd>Telescope lsp_definitions<CR>", "Show definitions")
+                map("grr", "<cmd>Telescope lsp_references<CR>", "Show references")
+                map("gri", "<cmd>Telescope lsp_implementations<CR>", "Show implementations")
+                map("grt", "<cmd>Telescope lsp_type_definitions<CR>", "Show type definitions")
+                map("gO", "<cmd>Telescope lsp_document_symbols<CR>", "Document symbols")
+                map("gW", "<cmd>Telescope lsp_dynamic_workspace_symbols<CR>", "Workspace symbols")
 
-                opts.desc = "Go to declaration"
-                vim.keymap.set("n", "gD", vim.lsp.buf.declaration, opts) -- go to declaration
+                -- Rename the variable under your cursor.
+                --  Most Language Servers support renaming across files, etc.
+                map('grn', vim.lsp.buf.rename, '[R]e[n]ame')
 
-                opts.desc = "Show LSP definitions"
-                vim.keymap.set("n", "gd", "<cmd>Telescope lsp_definitions<CR>", opts) -- show lsp definitions
+                -- Execute a code action, usually your cursor needs to be on top of an error
+                -- or a suggestion from your LSP for this to activate.
+                map('gra', vim.lsp.buf.code_action, '[G]oto Code [A]ction', { 'n', 'x' })
 
-                opts.desc = "Show LSP implementations"
-                vim.keymap.set("n", "gi", "<cmd>Telescope lsp_implementations<CR>", opts) -- show lsp implementations
+                -- Diagnostics
+                map("<leader>D", "<cmd>Telescope diagnostics bufnr=0<CR>", "Buffer diagnostics")
+                map("<leader>d", vim.diagnostic.open_float, "Line diagnostics")
+                map("[d", function() vim.diagnostic.jump({ count = -1 }) end, "Previous diagnostic")
+                map("]d", function() vim.diagnostic.jump({ count = 1 }) end, "Next diagnostic")
 
-                opts.desc = "Show LSP type definitions"
-                vim.keymap.set("n", "gt", "<cmd>Telescope lsp_type_definitions<CR>", opts) -- show lsp type definitions
-
-                opts.desc = "See available code actions"
-                vim.keymap.set({ "n", "v" }, "<leader>ca", vim.lsp.buf.code_action, opts) -- see available code actions, in visual mode will apply to selection
-
-                opts.desc = "Smart rename"
-                vim.keymap.set("n", "<leader>rn", vim.lsp.buf.rename, opts) -- smart rename
-
-                opts.desc = "Show buffer diagnostics"
-                vim.keymap.set("n", "<leader>D", "<cmd>Telescope diagnostics bufnr=0<CR>", opts) -- show  diagnostics for file
-
-                opts.desc = "Show line diagnostics"
-                vim.keymap.set("n", "<leader>d", vim.diagnostic.open_float, opts) -- show diagnostics for line
-
-                opts.desc = "Go to previous diagnostic"
-                vim.keymap.set("n", "[d", vim.diagnostic.goto_prev, opts) -- jump to previous diagnostic in buffer
-
-                opts.desc = "Go to next diagnostic"
-                vim.keymap.set("n", "]d", vim.diagnostic.goto_next, opts) -- jump to next diagnostic in buffer
-
-                opts.desc = "Show documentation for what is under cursor"
-                vim.keymap.set("n", "K", vim.lsp.buf.hover, opts) -- show documentation for what is under cursor
-
-                opts.desc = "Restart LSP"
-                vim.keymap.set("n", "<leader>rs", ":LspRestart<CR>", opts) -- mapping to restart lsp if necessary
+                map("<leader>rs", ":LspRestart<CR>", "Restart LSP")
             end,
         })
+        
+        vim.diagnostic.config({
+            signs = {
+                text = {
+                    [vim.diagnostic.severity.ERROR] = " ",
+                    [vim.diagnostic.severity.WARN] = " ",
+                    [vim.diagnostic.severity.HINT] = "󰠠 ",
+                    [vim.diagnostic.severity.INFO] = " ",
+                },
+            },
+        })
 
-        -- used to enable autocompletion (assign to every lsp server config)
+        -- Autocompletion capabilities
         local capabilities = cmp_nvim_lsp.default_capabilities()
 
-        -- Change the Diagnostic symbols in the sign column (gutter)
-        -- (not in youtube nvim video)
-        local signs = { Error = " ", Warn = " ", Hint = "󰠠 ", Info = " " }
-        for type, icon in pairs(signs) do
-            local hl = "DiagnosticSign" .. type
-            vim.fn.sign_define(hl, { text = icon, texthl = hl, numhl = "" })
-        end
-
-        require("mason").setup()
-        require("mason-lspconfig").setup()
-
+        -- Server configurations
         vim.lsp.config('lua_ls', {
-          capabilities = capabilities,
-          settings = {
-            Lua = {
-              diagnostics = { globals = { "vim" } },
-              completion = { callSnippet = "Replace" },
+            capabilities = capabilities,
+            settings = {
+                Lua = {
+                    diagnostics = { globals = { "vim" } },
+                    completion = { callSnippet = "Replace" },
+                },
             },
-          },
         })
 
         vim.lsp.config('basedpyright', {
-          capabilities = capabilities,
-          settings = {
-            basedpyright = {
-              diagnostics = { globals = { "vim" } },
-              analysis  = {
-                typeCheckingMode = "standard",
-                diagnosticMode = "openFilesOnly",
-                inlayHints = { callArgumentNames = true }
-              },
+            capabilities = capabilities,
+            settings = {
+                basedpyright = {
+                    analysis = {
+                        typeCheckingMode = "standard",
+                        diagnosticMode = "openFilesOnly",
+                        inlayHints = { callArgumentNames = true },
+                    },
+                },
             },
-          },
         })
 
-        -- For all other servers, you can use:
-        -- vim.lsp.config('server_name', { capabilities = capabilities })
+        -- Enable configured servers
+        vim.lsp.enable({ 'lua_ls', 'basedpyright' })
     end,
 }
-
