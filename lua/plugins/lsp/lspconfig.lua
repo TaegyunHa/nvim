@@ -1,104 +1,168 @@
 return {
-    "neovim/nvim-lspconfig",
-    event = { "BufReadPre", "BufNewFile" },
-    dependencies = {
-        { "mason-org/mason.nvim", opts = {} },
-        "WhoIsSethDaniel/mason-tool-installer.nvim",
-        "hrsh7th/cmp-nvim-lsp",
-        { "antosha417/nvim-lsp-file-operations", config = true },
-        { "folke/lazydev.nvim", ft = "lua", opts = {} },
-    },
-    config = function()
-        require("mason-tool-installer").setup({
-            ensure_installed = {
-                "lua_ls",
-                "clangd",
-                "cmake",
-                "stylua",
-                "isort",
-                "black",
-                "pylint",
-                "clang-format",
-                "cmake-language-server",
-            },
-        })
+	"neovim/nvim-lspconfig",
+	dependencies = {
+		{ "mason-org/mason.nvim", opts = {} },
+		"WhoIsSethDaniel/mason-tool-installer.nvim",
+		{ "j-hui/fidget.nvim", opts = {} },
+		"saghen/blink.cmp",
+		{ "antosha417/nvim-lsp-file-operations", config = true },
+		{ "folke/lazydev.nvim", ft = "lua", opts = {} },
+	},
+	config = function()
+		vim.api.nvim_create_autocmd("LspAttach", {
+			group = vim.api.nvim_create_augroup("kickstart-lsp-attach", { clear = true }),
+			callback = function(event)
+				local map = function(keys, func, desc, mode)
+					mode = mode or "n"
+					vim.keymap.set(mode, keys, func, { buffer = event.buf, desc = "LSP: " .. desc })
+				end
 
-        local cmp_nvim_lsp = require("cmp_nvim_lsp")
+				-- Rename the variable under your cursor.
+				map("grn", vim.lsp.buf.rename, "[R]e[n]ame")
 
-        vim.api.nvim_create_autocmd("LspAttach", {
-            group = vim.api.nvim_create_augroup("UserLspConfig", {}),
-            callback = function(ev)
-                local map = function(keys, func, desc, mode)
-                    mode = mode or "n"
-                    vim.keymap.set(mode, keys, func, { buffer = ev.buf, desc = "LSP: " .. desc })
-                end
+				-- Execute a code action
+				map("gra", vim.lsp.buf.code_action, "[G]oto Code [A]ction", { "n", "x" })
 
-                -- Telescope-powered LSP navigation (overrides 0.11 defaults with Telescope UI)
-                map("gD", vim.lsp.buf.declaration, "Go to declaration")
-                map("gd", "<cmd>Telescope lsp_definitions<CR>", "Show definitions")
-                map("grr", "<cmd>Telescope lsp_references<CR>", "Show references")
-                map("gri", "<cmd>Telescope lsp_implementations<CR>", "Show implementations")
-                map("grt", "<cmd>Telescope lsp_type_definitions<CR>", "Show type definitions")
-                map("gO", "<cmd>Telescope lsp_document_symbols<CR>", "Document symbols")
-                map("gW", "<cmd>Telescope lsp_dynamic_workspace_symbols<CR>", "Workspace symbols")
+				-- Go to declaration (e.g. header in C)
+				map("grD", vim.lsp.buf.declaration, "[G]oto [D]eclaration")
 
-                -- Rename the variable under your cursor.
-                --  Most Language Servers support renaming across files, etc.
-                map('grn', vim.lsp.buf.rename, '[R]e[n]ame')
+				-- Restart LSP
+				map("grs", ":LspRestart<CR>", "Restart LSP")
 
-                -- Execute a code action, usually your cursor needs to be on top of an error
-                -- or a suggestion from your LSP for this to activate.
-                map('gra', vim.lsp.buf.code_action, '[G]oto Code [A]ction', { 'n', 'x' })
+				-- Document highlight on CursorHold
+				local client = vim.lsp.get_client_by_id(event.data.client_id)
+				if client and client:supports_method("textDocument/documentHighlight", event.buf) then
+					local highlight_augroup =
+						vim.api.nvim_create_augroup("kickstart-lsp-highlight", { clear = false })
+					vim.api.nvim_create_autocmd({ "CursorHold", "CursorHoldI" }, {
+						buffer = event.buf,
+						group = highlight_augroup,
+						callback = vim.lsp.buf.document_highlight,
+					})
 
-                -- Diagnostics
-                map("<leader>D", "<cmd>Telescope diagnostics bufnr=0<CR>", "Buffer diagnostics")
-                map("<leader>d", vim.diagnostic.open_float, "Line diagnostics")
-                map("[d", function() vim.diagnostic.jump({ count = -1 }) end, "Previous diagnostic")
-                map("]d", function() vim.diagnostic.jump({ count = 1 }) end, "Next diagnostic")
+					vim.api.nvim_create_autocmd({ "CursorMoved", "CursorMovedI" }, {
+						buffer = event.buf,
+						group = highlight_augroup,
+						callback = vim.lsp.buf.clear_references,
+					})
 
-                map("<leader>rs", ":LspRestart<CR>", "Restart LSP")
-            end,
-        })
-        
-        vim.diagnostic.config({
-            signs = {
-                text = {
-                    [vim.diagnostic.severity.ERROR] = " ",
-                    [vim.diagnostic.severity.WARN] = " ",
-                    [vim.diagnostic.severity.HINT] = "󰠠 ",
-                    [vim.diagnostic.severity.INFO] = " ",
-                },
-            },
-        })
+					vim.api.nvim_create_autocmd("LspDetach", {
+						group = vim.api.nvim_create_augroup("kickstart-lsp-detach", { clear = true }),
+						callback = function(event2)
+							vim.lsp.buf.clear_references()
+							vim.api.nvim_clear_autocmds({ group = "kickstart-lsp-highlight", buffer = event2.buf })
+						end,
+					})
+				end
 
-        -- Autocompletion capabilities
-        local capabilities = cmp_nvim_lsp.default_capabilities()
+				-- Toggle inlay hints
+				if client and client:supports_method("textDocument/inlayHint", event.buf) then
+					map("<leader>th", function()
+						vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled({ bufnr = event.buf }))
+					end, "[T]oggle Inlay [H]ints")
+				end
+			end,
+		})
 
-        -- Server configurations
-        vim.lsp.config('lua_ls', {
-            capabilities = capabilities,
-            settings = {
-                Lua = {
-                    diagnostics = { globals = { "vim" } },
-                    completion = { callSnippet = "Replace" },
-                },
-            },
-        })
+		-- Diagnostic configuration
+		vim.diagnostic.config({
+			signs = {
+				text = {
+					[vim.diagnostic.severity.ERROR] = " ",
+					[vim.diagnostic.severity.WARN] = " ",
+					[vim.diagnostic.severity.HINT] = "󰠠 ",
+					[vim.diagnostic.severity.INFO] = " ",
+				},
+			},
+			update_in_insert = false,
+			severity_sort = true,
+			float = { border = "rounded", source = "if_many" },
+			underline = { severity = vim.diagnostic.severity.ERROR },
+			virtual_text = true,
+			virtual_lines = false,
+			jump = { float = true },
+		})
 
-        vim.lsp.config('basedpyright', {
-            capabilities = capabilities,
-            settings = {
-                basedpyright = {
-                    analysis = {
-                        typeCheckingMode = "standard",
-                        diagnosticMode = "openFilesOnly",
-                        inlayHints = { callArgumentNames = true },
-                    },
-                },
-            },
-        })
+		-- LSP capabilities from blink.cmp
+		local capabilities = require("blink.cmp").get_lsp_capabilities()
 
-        -- Enable configured servers
-        vim.lsp.enable({ 'lua_ls', 'basedpyright' })
-    end,
+		-- Server configurations
+		local servers = {
+			basedpyright = {
+				settings = {
+					basedpyright = {
+						analysis = {
+							typeCheckingMode = "standard",
+							diagnosticMode = "openFilesOnly",
+							inlayHints = { callArgumentNames = true },
+						},
+					},
+				},
+			},
+				clangd = {
+				cmd = {
+					"clangd",
+					"--background-index",
+					"--background-index-priority=low",
+					"--j=4",
+					"--pch-storage=memory",
+					"--header-insertion=never",
+					"--completion-style=detailed",
+					"--fallback-style=Microsoft",
+					"--limit-results=50",
+					"--log=error",
+				},
+			},
+		}
+
+		-- Mason: ensure tools are installed
+		local ensure_installed = vim.tbl_keys(servers or {})
+		vim.list_extend(ensure_installed, {
+			"lua-language-server",
+			"stylua",
+			"isort",
+			"black",
+			"pylint",
+			"clang-format",
+		})
+		require("mason-tool-installer").setup({ ensure_installed = ensure_installed })
+
+		-- Configure and enable servers
+		for name, server in pairs(servers) do
+			server.capabilities = vim.tbl_deep_extend("force", {}, capabilities, server.capabilities or {})
+			vim.lsp.config(name, server)
+			vim.lsp.enable(name)
+		end
+
+		-- Lua LS: special config as recommended by Neovim docs
+		vim.lsp.config("lua_ls", {
+			capabilities = capabilities,
+			on_init = function(client)
+				if client.workspace_folders then
+					local path = client.workspace_folders[1].name
+					if
+						path ~= vim.fn.stdpath("config")
+						and (vim.uv.fs_stat(path .. "/.luarc.json") or vim.uv.fs_stat(path .. "/.luarc.jsonc"))
+					then
+						return
+					end
+				end
+
+				client.config.settings.Lua = vim.tbl_deep_extend("force", client.config.settings.Lua, {
+					runtime = {
+						version = "LuaJIT",
+						path = { "lua/?.lua", "lua/?/init.lua" },
+					},
+					workspace = {
+						checkThirdParty = false,
+						library = vim.api.nvim_get_runtime_file("", true),
+					},
+				})
+			end,
+			settings = {
+				Lua = {},
+			},
+		})
+		vim.lsp.enable("lua_ls")
+	end,
 }
