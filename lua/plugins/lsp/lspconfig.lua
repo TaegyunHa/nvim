@@ -29,8 +29,21 @@ return {
 				-- Restart LSP
 				map("grs", ":LspRestart<CR>", "Restart LSP")
 
-				-- Document highlight on CursorHold
 				local client = vim.lsp.get_client_by_id(event.data.client_id)
+
+				-- Switch between header and source (clangd)
+				if client and client.name == "clangd" then
+					map("gro", function()
+						local params = { uri = vim.uri_from_bufnr(0) }
+						client:request("textDocument/switchSourceHeader", params, function(err, uri)
+							if not err and uri then
+								vim.cmd.edit(vim.uri_to_fname(uri))
+							end
+						end)
+					end, "Switch Header/Source")
+				end
+
+				-- Document highlight on CursorHold
 				if client and client:supports_method("textDocument/documentHighlight", event.buf) then
 					local highlight_augroup =
 						vim.api.nvim_create_augroup("kickstart-lsp-highlight", { clear = false })
@@ -137,30 +150,16 @@ return {
 		-- Lua LS: special config as recommended by Neovim docs
 		vim.lsp.config("lua_ls", {
 			capabilities = capabilities,
-			on_init = function(client)
-				if client.workspace_folders then
-					local path = client.workspace_folders[1].name
-					if
-						path ~= vim.fn.stdpath("config")
-						and (vim.uv.fs_stat(path .. "/.luarc.json") or vim.uv.fs_stat(path .. "/.luarc.jsonc"))
-					then
-						return
-					end
-				end
-
-				client.config.settings.Lua = vim.tbl_deep_extend("force", client.config.settings.Lua, {
+			settings = {
+				Lua = {
 					runtime = {
 						version = "LuaJIT",
-						path = { "lua/?.lua", "lua/?/init.lua" },
 					},
 					workspace = {
 						checkThirdParty = false,
 						library = vim.api.nvim_get_runtime_file("", true),
 					},
-				})
-			end,
-			settings = {
-				Lua = {},
+				},
 			},
 		})
 		vim.lsp.enable("lua_ls")
