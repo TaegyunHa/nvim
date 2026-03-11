@@ -11,7 +11,7 @@ return {
     config = function()
         require("mason-tool-installer").setup({
             ensure_installed = {
-                "lua_ls",
+                "lua-language-server",
                 "clangd",
                 "cmake",
                 "stylua",
