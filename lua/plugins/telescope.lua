@@ -70,7 +70,7 @@ return {
 					builtin.lsp_implementations,
 					{ buffer = buf, desc = "[G]oto [I]mplementation" }
 				)
-				vim.keymap.set("n", "grd", builtin.lsp_definitions, { buffer = buf, desc = "[G]oto [D]efinition" })
+				vim.keymap.set("n", "gd", builtin.lsp_definitions, { buffer = buf, desc = "[G]oto [D]efinition" })
 				vim.keymap.set(
 					"n",
 					"gO",
