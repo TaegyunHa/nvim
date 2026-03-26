@@ -6,6 +6,12 @@ Set environment variable:
 - Variable: `XDG_CONFIG_HOME`
 - Value: `%USERPROFILE%\.config`
 
+#### Windows PowerShell
+
+```pwsh
+[Environment]::SetEnvironmentVariable("XDG_CONFIG_HOME", "$env:USERPROFILE\.config", "User")
+```
+
 ## Packers
 
 - https://github.com/wbthomason/packer.nvim
