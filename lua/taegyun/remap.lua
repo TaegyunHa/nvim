@@ -46,6 +46,13 @@ vim.keymap.set("n", "<leader>y", '"+y')
 vim.keymap.set("v", "<leader>y", '"+y')
 vim.keymap.set("n", "<leader>Y", '"+Y')
 
+-- Yank current file path into system clipboard
+vim.keymap.set("n", "<leader>yp", function()
+	local filepath = vim.fn.expand("%:p")
+	vim.fn.setreg("+", filepath)
+	vim.hl.on_yank({ higroup = "IncSearch", timeout = 150 })
+end, { desc = "Yank file path" })
+
 -- Yank current file path with visual selection line range into system clipboard
 vim.keymap.set("v", "<leader>Y", function()
 	local start_line = vim.fn.line("'<")
